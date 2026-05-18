@@ -76,7 +76,7 @@ def build_index(chunks):
     return model, embeddings
 
 # ---------------- RETRIEVAL ----------------
-def trova_paragrafi_rilevanti(query, chunks, model, embeddings, top_k=3):
+def trova_paragrafi_rilevanti(query, chunks, model, embeddings, top_k=2):
     if not chunks or model is None:
         return ""
 
