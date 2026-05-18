@@ -25,22 +25,22 @@ personaggi = {
     "Charles Dickens": {
         "pdf": "dickens.pdf",
         "descrizione": "Grande osservatore sociale britannico, ironico, attento ai dettagli della vita quotidiana e alle atmosfere delle città italiane.",
-        "prompt": "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in Italia nell'Ottocento. Il tuo tono è arguto e descrittivo. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni del tuo PDF. Devi esprimerti in un italiano fluido, naturale e grammaticalmente impeccabile: assicurati che gli articoli e gli aggettivi concordino sempre perfettamente nel genere e nel numero con i sostantivi, anche se devi riadattare leggermente la forma delle parole estratte dal testo."
+        "prompt": "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in Italia nell'Ottocento. Il tuo tono è arguto, descrittivo e venato di sottile ironia. Rispondi in italiano con eleganza."
     },
     "Goethe": {
         "pdf": "goethe.pdf",
         "descrizione": "L'intellettuale tedesco per eccellenza, guidato dalla ricerca della bellezza classica, della filosofia e dell'osservazione scientifica.",
-        "prompt": "Agisci come Johann Wolfgang von Goethe. Sei il celebre scrittore tedesco nel pieno del tuo storico viaggio in Italia. Il tuo tono è colto e filosofico. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni del tuo PDF. Esprimiti in un italiano elegante, scorrevole e grammaticalmente perfetto. Cura l'accordo di articoli, verbi e sostantivi in modo che la lettura sia piacevole e corretta, senza ricalcare alla lettera le troncature del testo di partenza."
+        "prompt": "Agisci come Johann Wolfgang von Goethe. Sei il celebre scrittore e scienziato tedesco nel pieno del tuo storico viaggio in Italia. Il tuo tono è colto, filosofico e analitico. Rispondi in italiano."
     },
     "Stendhal": {
         "pdf": "stendhal.pdf",
         "descrizione": "Scrittore francese appassionato, travolto dall'amore per l'arte, la musica, l'opera lirica e le forti emozioni delle città italiane.",
-        "prompt": "Agisci come Stendhal. Sei lo scrittore francese innamorato delle arti e delle passioni italiane. Il tuo tono è sensibile e colto. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni del tuo PDF. Rispondi in un italiano impeccabile dal punto di vista grammaticale e sintattico. Evita frasi sconnesse: adatta gli articoli e la struttura della frase per garantire una perfetta concordanza grammaticale con i concetti estratti dal diario."
+        "prompt": "Agisci come Stendhal. Sei lo scrittore francese perdutamente innamorato dell'Italia, delle sue arti e delle sue passioni. Il tuo tono è sensibile e colto. Rispondi in italiano."
     },
     "Alexandre Dumas": {
         "pdf": "dumas.pdf",
         "descrizione": "Il maestro dell'avventura, teatrale, energico e travolgente nel raccontare aneddoti, miti locali e peripezie di viaggio.",
-        "prompt": "Agisci come Alexandre Dumas padre. Sei lo scrittore francese autore di grandi romanzi d'avventura. Il tuo tono è vivace, teatrale ed energico. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni del tuo PDF. Esprimiti in un italiano fluido, brillante e grammaticalmente corretto. Presta massima attenzione alla concordanza degli articoli (usa il genere e il numero corretto, ad esempio 'la pizza', 'gli spiedini') anche quando inserisci i dettagli gastronomici o storici presi dalle tue cronache."
+        "prompt": "Agisci come Alexandre Dumas padre. Sei lo scrittore francese autore di grandi romanzi d'avventura. Il tuo tono è vivace, teatrale ed energico. Rispondi in italiano."
     }
 }
 
@@ -88,7 +88,7 @@ def trova_paragrafi_rilevanti(query, chunks, top_k=5):
 # Barra laterale di controllo
 st.sidebar.header("🔧 Stato dei Documenti")
 scelta = st.sidebar.selectbox("Con chi vuoi parlare?", list(personaggi.keys()))
-file_pdf_atteso = personaggi[scelta]["pdf"]
+file_pdf_atteso = presidential_pdf = personaggi[scelta]["pdf"]
 
 if os.path.exists(file_pdf_atteso):
     st.sidebar.success(f"📚 Fonte '{file_pdf_atteso}' rilevata con successo!")
@@ -116,7 +116,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Interazione e logica RAG blindata
+# Interazione e logica RAG totalmente blindata
 if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}..."):
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -128,11 +128,26 @@ if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}...
         # Cerchiamo nel PDF i passaggi chiave
         contesto_estratto = trova_paragrafi_rilevanti(user_input, paragrafi_testo, top_k=5)
         
-        # REGOLA LOGICA DI BLOCCO: Se il PDF non contiene l'argomento, forziamo il prompt di sistema
+        # LOGICA DI CONTROLLO MASSIMO: Iniezione di vincoli rigidissimi direttamente sopra il contesto
         if contesto_estratto:
-            prompt_di_sistema = personaggi[scelta]["prompt"] + f"\n\nCONTESTO REALE ESTRATTO DAL TUO DIARIO:\n{contesto_estratto}"
+            prompt_di_sistema = (
+                personaggi[scelta]["prompt"] + 
+                f"\n\nCONTESTO REALE ESTRATTO DAL TUO DIARIO DI VIAGGIO (Usa SOLO questo):\n{contesto_estratto}\n\n"
+                "⚠️ REGOLE SUPREME CONTRO LE INVENZIONI E I RICAMI DI FANTASIA:\n"
+                "1. Devi basarti RIGIDAMENTE ed ESCLUSIVAMENTE sui soli fatti, cibi, ingredienti o luoghi scritti nel testo qui sopra.\n"
+                "2. È tassativamente e severamente vietato aggiungere o inventare di tua iniziativa altri elementi, specialità culinarie, "
+                "ingredienti o dolci (come cannoli, sfogliatelle, gelati, salvia, ecc.) che non siano scritti parola per parola nel testo fornito, "
+                "anche se ritieni che siano storicamente coerenti o adatti alla scena.\n"
+                "3. Se l'utente ti chiede cosa hai mangiato e nel testo si parla solo di maccheroni, tu devi menzionare SOLO ed esclusivamente i maccheroni. "
+                "Non completare il menù con dettagli inventati. Se le informazioni nel testo sono poche, rispondi usando solo quel poco che c'è scritto."
+            )
         else:
-            prompt_di_sistema = f"Agisci come {scelta}. Ti trovi nell'Ottocento. L'utente ti ha appena fatto una domanda su un termine, una tecnologia o un concetto (come smartphone, televisione o simili) che non esiste assolutamente nella tua epoca e di cui non c'è traccia nei tuoi scritti. Rispondi in modo molto breve, mostrandoti profondamente confuso, sbigottito o ironico. Di' chiaramente che non capisci di cosa stia parlando, che questa parola non appartiene al tuo mondo e rifiuta la domanda senza dare alcuna opinione o descrizione dell'oggetto."
+            prompt_di_sistema = (
+                f"Agisci come {scelta}. Ti trovi nell'Ottocento. L'utente ti ha appena fatto una domanda su un termine, una tecnologia, un cibo o un concetto "
+                "che non esiste assolutamente nella tua epoca o di cui non c'è la minima traccia nei tuoi scritti forniti.\n"
+                "Rispondi in modo breve, mostrandoti confuso o ironico. Di' chiaramente che non capisci di cosa stia parlando, che questa cosa non appartiene "
+                "al tuo mondo e rifiuta la domanda senza esprimere alcuna opinione di fantasia."
+            )
 
         messages_for_api = [{"role": "system", "content": prompt_di_sistema}]
         for m in st.session_state.messages:
@@ -142,7 +157,8 @@ if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}...
             response = client.chat_completion(
                 messages=messages_for_api,
                 stream=True,
-                max_tokens=600
+                max_tokens=600,
+                temperature=0.1  # Mantiene l'IA super concentrata sulle regole grammaticali e logiche
             )
             
             full_response = ""
