@@ -82,13 +82,13 @@ def trova_paragrafi_rilevanti(query, chunks, top_k=3):
         
         risultati = []
         for idx in top_indices:
-            if scores[idx] > 0.05:  # Filtro di pertinenza
+            if scores[idx] > 0.05:
                 risultati.append(chunks[idx])
         return "\n\n".join(risultati)
     except:
         return ""
 
-# TRADUTTORE DELLA SOLA QUERY UTENTE (Breve e preciso)
+# TRADUTTORE DELLA SOLA QUERY UTENTE
 def traduci_domanda_utente(testo_italiano, lingua_destinazione):
     if lingua_destinazione == "italiano":
         return testo_italiano
@@ -137,7 +137,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Interazione e logica RAG ad alte prestazioni
+# Interazione e logica RAG con blocco di lingua assoluto
 if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}..."):
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -147,30 +147,26 @@ if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}...
         message_placeholder = st.empty()
         
         lingua_target = personaggi[scelta]["lingua_pdf"]
-        
-        # Traduciamo solo la stringa di ricerca per il TF-IDF
         stringa_da_cercare = traduci_domanda_utente(user_input, lingua_target)
-        
-        # Estraiamo il contesto in LINGUA ORIGINALE (evita alterazioni e allucinazioni da traduzione)
         contesto_estratto = trova_paragrafi_rilevanti(stringa_da_cercare, paragrafi_testo, top_k=3)
         
-        # IL GUARDRAIL LOGICO CON TRIPLE VIRGOLETTE
+        # AGGIORNATO: Triple virgolette con "Blocco Lingua Assoluto" per evitare leak di cinese
         if contesto_estratto:
             prompt_di_sistema = f"""{personaggi[scelta]["prompt"]}
 
 [CONTESTO AUTENTICO IN LINGUA {lingua_target.upper()} ESTRATTO DAL TUO DIARIO]:
 {contesto_estratto}
 
-⚠️ DIRETTIVE DI VERIDICITÀ ASSOLUTA (TOLLERANZA ZERO PER LE INVENZIONI):
-1. Tu comprendi perfettamente la lingua {lingua_target} del testo sopra riportato, ma devi formulare la tua risposta unicamente in un italiano fluido, naturale ed elegante.
-2. La tua unica ed esclusiva fonte di verità sono i fatti scritti nel testo in lingua originale sopra riportato.
-3. ISOLAMENTO DELLA CONOSCENZA: Se l'utente ti nomina o ti interroga su piatti, ingredienti, luoghi o dettagli (come pasta alla puttanesca, cocchi, caponotti, arrosti o altro) che NON sono esplicitamente scritti nel testo originale sopra, devi dichiarare che nei tuoi diari non c'è traccia di queste cose. Non usare la tua immaginazione per confermare falsi miti.
-4. Riporta solo i fatti presenti, senza estrapolare, senza inventare ricette e senza aggiungere aggettivi qualificativi di testa tua."""
+⚠️ DIRETTIVE DI VERIDICITÀ E LINGUA ASSOLUTE (TASSATIVE):
+1. LINGUA ESCLUSIVA: Rispondi REQUISITAMENTE al 100% in lingua italiana. È severamente ed ASSOLUTAMENTE VIETATO l'uso di caratteri cinesi (中文), parole inglesi, francesi o note di traduzione interne nella risposta finale. Non mostrare mai la tua traduzione interna.
+2. La tua unica fonte di verità sono i fatti scritti nel testo originale sopra riportato.
+3. ISOLAMENTO DELLA CONOSCENZA: Se l'utente ti nomina o ti chiede di piatti, ricette o ingredienti (come pasta alla puttanesca, caponotti, cocchi o altro) che NON sono scritti chiaramente nel testo originale sopra, devi dichiarare che nei tuoi diari non c'è alcuna traccia di queste cose.
+4. Non inventare, non estrapolare e non aggiungere alcun aggettivo descrittivo o cibo di testa tua."""
         else:
             prompt_di_sistema = f"""Agisci come {scelta}. Ti trovi nell'Ottocento.
 
 Istruzione universale di vuoto documentale: L'utente ti ha fatto una domanda su un concetto, un'invenzione moderna, un cibo o un dettaglio che non è assolutamente presente nei tuoi scritti forniti o che non appartiene al tuo secolo.
-Rispondi in modo molto breve (massimo due frasi), dichiarando con fermezza storica o ironia che non ricordi questo elemento, che non è registrato nelle tue cronache o che non fa parte del tuo mondo. Rifiuta la domanda senza inventare nulla."""
+Rispondi in modo molto breve (massimo due frasi) ed ESCLUSIVAMENTE in lingua italiana. Dichiara che non ricordi questo elemento o che non fa parte delle tue cronache. Non usare mai caratteri cinesi."""
 
         messages_for_api = [{"role": "system", "content": prompt_di_sistema}]
         for m in st.session_state.messages:
