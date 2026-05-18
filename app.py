@@ -21,46 +21,47 @@ personaggi = {
     "Charles Dickens": {
         "pdf": "dickens.pdf",
         "descrizione": "Osservatore sociale britannico, ironico e descrittivo.",
-        "prompt": """Agisci come Charles Dickens. Sei in viaggio in Italia.
-Il tuo tono è arguto, descrittivo e ironico. Rispondi in italiano."""
+        "prompt": "Agisci come Charles Dickens. Sei in viaggio in Italia. Il tuo tono è arguto, descrittivo e ironico. Rispondi in italiano."
     },
     "Goethe": {
         "pdf": "goethe.pdf",
         "descrizione": "Intellettuale tedesco, filosofico e analitico.",
-        "prompt": """Agisci come Johann Wolfgang von Goethe.
-Tono colto, filosofico, analitico. Rispondi in italiano."""
+        "prompt": "Agisci come Johann Wolfgang von Goethe. Tono colto, filosofico, analitico. Rispondi in italiano."
     },
     "Stendhal": {
         "pdf": "stendhal.pdf",
         "descrizione": "Scrittore emotivo e appassionato.",
-        "prompt": """Agisci come Stendhal.
-Tono appassionato, emotivo e sensibile. Rispondi in italiano."""
+        "prompt": "Agisci come Stendhal. Tono appassionato, emotivo e sensibile. Rispondi in italiano."
     },
     "Alexandre Dumas": {
         "pdf": "dumas.pdf",
         "descrizione": "Narratore teatrale e avventuroso.",
-        "prompt": """Agisci come Alexandre Dumas padre.
-Tono vivace, teatrale e avventuroso. Rispondi in italiano."""
+        "prompt": "Agisci come Alexandre Dumas padre. Tono vivace, teatrale e avventuroso. Rispondi in italiano."
     }
 }
 
-# ---------------- PDF + CHUNKING ----------------
+# ---------------- PDF + CHUNKING SICURO A PAROLE ----------------
 @st.cache_data
-def carica_e_spezzetta_pdf(nome_file):
+def carica_e_spezzetta_pdf(nome_file, chunk_size=200, overlap=50):
     if not os.path.exists(nome_file):
         return []
 
     try:
         reader = PdfReader(nome_file)
-        testo = ""
+        testo_completo = ""
 
         for pagina in reader.pages:
             t = pagina.extract_text()
             if t:
-                testo += t + "\n"
+                testo_completo += t + " "
 
-        # Chunking per paragrafi (molto meglio)
-        chunks = [p.strip() for p in testo.split("\n\n") if len(p.strip()) > 100]
+        # Sminuzzamento a parole per evitare limiti di token
+        parole = testo_completo.split()
+        chunks = []
+        for i in range(0, len(parole), chunk_size - overlap):
+            chunk = " ".join(parole[i:i+chunk_size])
+            if len(chunk.strip()) > 100:
+                chunks.append(chunk)
 
         return chunks
 
@@ -76,8 +77,8 @@ def build_index(chunks):
     return model, embeddings
 
 # ---------------- RETRIEVAL ----------------
-def trova_paragrafi_rilevanti(query, chunks, model, embeddings, top_k=2):
-    if not chunks or model is None:
+def trova_paragrafi_rilevanti(query, chunks, model, embeddings, top_k=3):
+    if not chunks or model is None or embeddings is None:
         return ""
 
     query_embedding = model.encode([query], convert_to_numpy=True)[0]
@@ -88,7 +89,7 @@ def trova_paragrafi_rilevanti(query, chunks, model, embeddings, top_k=2):
 
     top_indices = np.argsort(scores)[-top_k:][::-1]
 
-    risultati = [chunks[i] for i in top_indices if scores[i] > 0.2]
+    risultati = [chunks[i] for i in top_indices if scores[i] > 0.35]
 
     return "\n\n".join(risultati)
 
@@ -137,7 +138,7 @@ if user_input := st.chat_input(f"Fai una domanda a {scelta}..."):
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
 
-        # 🔍 Retrieval migliorato
+        # 🔍 Retrieval semantico
         contesto_estratto = trova_paragrafi_rilevanti(
             user_input,
             paragrafi_testo,
@@ -145,28 +146,24 @@ if user_input := st.chat_input(f"Fai una domanda a {scelta}..."):
             embeddings
         )
 
-        # 🧠 Prompt migliorato
-        prompt_di_sistema = personaggi[scelta]["prompt"] + """
-
-ISTRUZIONI IMPORTANTI:
-- Usa principalmente il contesto fornito
-- Se il contesto è incompleto, puoi integrare con conoscenze generali
-- Se non sei sicuro, dillo chiaramente
-- Mantieni sempre lo stile del personaggio
-"""
-
+        # 🧠 Prompt blindato contro le invenzioni
         if contesto_estratto:
-            prompt_di_sistema += f"""
+            prompt_di_sistema = f"""{personaggi[scelta]["prompt"]}
 
-CONTESTO:
----------------------
+[CONTESTO AUTENTICO ESTRATTO DAL TUO DIARIO]:
 {contesto_estratto}
----------------------
-"""
-        else:
-            prompt_di_sistema += "\n\nNessun contesto rilevante trovato."
 
-        # Limita memoria
+⚠️ DIRETTIVE DI VERIDICITÀ ASSOLUTA:
+1. La tua unica ed esclusiva fonte di verità sono i fatti scritti nel testo originale qui sopra.
+2. ISOLAMENTO: Ignora qualsiasi conoscenza globale. Non inventare, non presumere.
+3. Se l'utente ti chiede dettagli che NON sono esplicitamente scritti nel testo sopra, dichiara che non ne hai traccia nei tuoi diari.
+4. Rispondi in italiano in modo naturale."""
+        else:
+            prompt_di_sistema = f"""Agisci come {scelta}. Ti trovi nell'Ottocento.
+
+Rispondi in massimo due frasi dichiarando con fermezza che non ricordi questo dettaglio o che non fa parte delle tue cronache di viaggio. Rifiuta la domanda senza inventare nulla."""
+
+        # Costruisce i messaggi
         messages_for_api = [{"role": "system", "content": prompt_di_sistema}]
         for m in st.session_state.messages[-6:]:
             messages_for_api.append(m)
@@ -175,12 +172,11 @@ CONTESTO:
             response = client.chat_completion(
                 messages=messages_for_api,
                 stream=True,
-                max_tokens=400,
-                temperature=0.7
+                max_tokens=500,
+                temperature=0.1  # <-- Fondamentale per bloccare la fantasia
             )
 
             full_response = ""
-
             for chunk in response:
                 content = chunk.choices[0].delta.content
                 if content:
@@ -188,11 +184,10 @@ CONTESTO:
                     message_placeholder.markdown(full_response + "▌")
 
             message_placeholder.markdown(full_response)
-
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": full_response
             })
 
         except Exception as e:
-            st.error(f"Errore: {e}")
+            st.error(f"Errore tecnico: {e}")
