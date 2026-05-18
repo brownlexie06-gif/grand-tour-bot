@@ -17,7 +17,7 @@ client = OpenAI(
 )
 
 # Utilizziamo un eccellente modello open-source leggero e performante
-MODELLO_OPEN_SOURCE = "mistralai/Mistral-7B-Instruct-v0.3"
+MODELLO_OPEN_SOURCE = "meta-llama/Llama-3.2-3B-Instruct"
 
 # Definizione dei profili dei quattro protagonisti
 personaggi = {
