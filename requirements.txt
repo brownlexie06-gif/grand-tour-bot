@@ -1,5 +1,5 @@
 streamlit
-pypdf
-scikit-learn
 huggingface_hub
+pypdf
+numpy
 sentence-transformers
