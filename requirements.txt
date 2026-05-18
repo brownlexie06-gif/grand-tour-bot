@@ -2,3 +2,4 @@ streamlit
 pypdf
 scikit-learn
 huggingface_hub
+sentence-transformers
