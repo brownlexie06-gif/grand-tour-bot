@@ -153,21 +153,25 @@ if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}...
         contesto_estratto = trova_paragrafi_rilevanti(stringa_da_cercare, paragrafi_testo, top_k=5)
         
         # Il guardrail logico contro le invenzioni di memoria
+        # IL GUARDRAIL LOGICO UNIVERSALE CONTRO LE INVENZIONI
         if contesto_estratto:
             prompt_di_sistema = (
                 personaggi[scelta]["prompt"] + 
-                f"\n\nCONTESTO REALE ESTRATTO DAL TUO DIARIO (Nota: il testo è in {lingua_target}, analizzalo con attenzione ma rispondi ed esprimiti unicamente in lingua italiana):\n{contesto_estratto}\n\n"
-                "⚠️ REGOLE SUPREME DI COMPORTAMENTO:\n"
-                "1. Rispondi basandoti RIGIDAMENTE ed ESCLUSIVAMENTE sui soli fatti, elementi o luoghi presenti nel testo sopra.\n"
-                "2. È severamente vietato aggiungere dettagli di fantasia, ingredienti o aneddoti non scritti esplicitamente nel diario.\n"
-                "3. Esprimiti in un italiano fluido, naturale e grammaticalmente corretto, curando la concordanza di articoli e aggettivi."
+                f"\n\n[CONTESTO REALE ESTRATTO DAL TUO DIARIO DI VIAGGIO IN LINGUA {lingua_target.upper()}]:\n{contesto_estratto}\n\n"
+                "⚠️ DIRETTIVE DI VERIDICITÀ ASSOLUTA (TOLLERANZA ZERO PER LE INVENZIONI):\n"
+                "1. Agisci come un puro estrattore di informazioni. La tua unica ed esclusiva fonte di verità è il [CONTESTO ESTRATTO DAL PDF] sopra riportato.\n"
+                "2. ISOLAMENTO DELLA CONOSCENZA: Ignora completamente qualsiasi informazione, fatto storico, ricetta, ingrediente o concetto appreso durante il tuo addestramento che non sia presente nel testo fornito.\n"
+                "3. DIVIETO DI ESTRAPOLAZIONE: Non presumere, non ipotizzare e non dedurre nulla che non sia esplicitamente scritto. Se nel testo si nomina un oggetto o un cibo (es. 'pizza' o 'maccheroni'), non aggiungere aggettivi, condimenti, sughi, ingredienti o dettagli descrittivi se il testo non li contiene esplicitamente.\n"
+                "4. REGOLA DEL SILENZIO: Se la domanda dell'utente richiede dettagli non scritti nel testo (es. chiede cosa hai mangiato, e il testo dice solo 'ho cenato'), devi limitarti a riportare solo quel poco che c'è scritto, dichiarando che i tuoi diari non forniscono ulteriori dettagli.\n"
+                "5. Mantieni comunque il tono e la personalità del tuo personaggio, ma applicala solo ed esclusivamente ai fatti reali estratti dal documento."
             )
         else:
             prompt_di_sistema = (
-                f"Agisci come {scelta}. Ti trovi nell'Ottocento. L'utente ti ha fatto una domanda su un concetto, "
-                "un'invenzione moderna o un dettaglio che non è assolutamente presente nei tuoi diari forniti.\n"
-                "Rispondi in modo molto breve, mostrandoti confuso o ironico. Di' chiaramente che non ricordi questo dettaglio "
-                "o che non trovi alcuna traccia di questa cosa nelle tue cronache di viaggio, rifiutando di inventare opinioni."
+                f"Agisci come {scelta}. Ti trovi nell'Ottocento.\n"
+                "Istruzione universale di vuoto documentale: L'utente ti ha fatto una domanda su un concetto, "
+                "un'invenzione moderna o un dettaglio che non è assolutamente presente nei tuoi diari forniti o che non appartiene alla tua epoca.\n"
+                "Rispondi in modo molto breve (massimo due frasi), dichiarando con assoluta fermezza o ironia ottocentesca che non ricordi questo dettaglio, "
+                "che non è annotato nelle tue cronache o che non hai idea di cosa sia. Rifiuta la domanda senza inventare pareri."
             )
 
         messages_for_api = [{"role": "system", "content": prompt_di_sistema}]
