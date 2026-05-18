@@ -82,26 +82,28 @@ def trova_paragrafi_rilevanti(query, chunks, top_k=3):
         
         risultati = []
         for idx in top_indices:
-            if scores[idx] > 0.05:  # Soglia di rilevanza matematica rigorosa
+            if scores[idx] > 0.05:  # Filtro di pertinenza
                 risultati.append(chunks[idx])
         return "\n\n".join(risultati)
     except:
         return ""
 
-# MOTORE DI TRADUZIONE DI BACKGROUND
-def traduci_testo_nascosto(testo, compito_richiesto):
+# TRADUTTORE DELLA SOLA QUERY UTENTE (Breve e preciso)
+def traduci_domanda_utente(testo_italiano, lingua_destinazione):
+    if lingua_destinazione == "italiano":
+        return testo_italiano
     try:
         res = client.chat_completion(
             messages=[
-                {"role": "system", "content": "Sei un traduttore automatico perfetto e letterale. Lavori dietro le quinte di un sistema informatico. Restituisci SOLO ed ESCLUSIVAMENTE il testo tradotto, senza introduzioni, senza commenti e senza note a margine."},
-                {"role": "user", "content": f"{compito_richiesto}: {testo}"}
+                {"role": "system", "content": "Sei un traduttore automatico. Traduci la domanda dell'utente nella lingua richiesta in modo diretto. Restituisci SOLO la traduzione, senza commenti."},
+                {"role": "user", "content": f"Traduci in {lingua_destinazione}: {testo_italiano}"}
             ],
-            max_tokens=1000,
+            max_tokens=100,
             temperature=0.1
         )
         return res.choices[0].message.content.strip()
     except:
-        return testo
+        return testo_italiano
 # ----------------------------------------
 
 # Barra laterale di controllo
@@ -135,7 +137,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Interazione e logica RAG multilingue blindata
+# Interazione e logica RAG ad alte prestazioni
 if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}..."):
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -146,30 +148,24 @@ if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}...
         
         lingua_target = personaggi[scelta]["lingua_pdf"]
         
-        # PIPELINE DI TRADUZIONE INCROCIATA
-        if lingua_target != "italiano":
-            stringa_da_cercare = traduci_testo_nascosto(user_input, f"Traduci questa domanda in {lingua_target}")
-            contesto_straniero = trova_paragrafi_rilevanti(stringa_da_cercare, paragrafi_testo, top_k=3)
-            if contesto_straniero:
-                contesto_estratto = traduci_testo_nascosto(contesto_straniero, "Traduci questo testo in italiano")
-            else:
-                contesto_estratto = ""
-        else:
-            stringa_da_cercare = user_input
-            contesto_estratto = trova_paragrafi_rilevanti(stringa_da_cercare, paragrafi_testo, top_k=3)
+        # Traduciamo solo la stringa di ricerca per il TF-IDF
+        stringa_da_cercare = traduci_domanda_utente(user_input, lingua_target)
         
-        # IL GUARDRAIL LOGICO CON TRIPLE VIRGOLETTE (Antierrore di sintassi)
+        # Estraiamo il contesto in LINGUA ORIGINALE (evita alterazioni e allucinazioni da traduzione)
+        contesto_estratto = trova_paragrafi_rilevanti(stringa_da_cercare, paragrafi_testo, top_k=3)
+        
+        # IL GUARDRAIL LOGICO CON TRIPLE VIRGOLETTE
         if contesto_estratto:
             prompt_di_sistema = f"""{personaggi[scelta]["prompt"]}
 
-[CONTESTO REALE ED AUTENTICO ESTRATTO DAL TUO DIARIO]:
+[CONTESTO AUTENTICO IN LINGUA {lingua_target.upper()} ESTRATTO DAL TUO DIARIO]:
 {contesto_estratto}
 
 ⚠️ DIRETTIVE DI VERIDICITÀ ASSOLUTA (TOLLERANZA ZERO PER LE INVENZIONI):
-1. La tua unica fonte di verità è il [CONTESTO REALE ED AUTENTICO ESTRATTO DAL TUO DIARIO] riportato sopra.
-2. ISOLAMENTO DELLA CONOSCENZA: Ignora qualsiasi informazione, ricetta, ingrediente, luogo o tecnologia appresi fuori da questo testo.
-3. DIVIETO DI ESTRAPOLAZIONE: Non aggiungere dettagli descrittivi, aggettivi qualificativi o ingredienti di testa tua. Se il testo menziona un cibo o un luogo in modo semplice, riportalo esattamente così come appare, senza arricchirlo con stereotipi moderni o conoscenze esterne.
-4. Se i dettagli nel testo sono scarsi, fornisci una risposta altrettanto breve e dichiara che i tuoi diari non offrono ulteriori annotazioni su questo specifico punto."""
+1. Tu comprendi perfettamente la lingua {lingua_target} del testo sopra riportato, ma devi formulare la tua risposta unicamente in un italiano fluido, naturale ed elegante.
+2. La tua unica ed esclusiva fonte di verità sono i fatti scritti nel testo in lingua originale sopra riportato.
+3. ISOLAMENTO DELLA CONOSCENZA: Se l'utente ti nomina o ti interroga su piatti, ingredienti, luoghi o dettagli (come pasta alla puttanesca, cocchi, caponotti, arrosti o altro) che NON sono esplicitamente scritti nel testo originale sopra, devi dichiarare che nei tuoi diari non c'è traccia di queste cose. Non usare la tua immaginazione per confermare falsi miti.
+4. Riporta solo i fatti presenti, senza estrapolare, senza inventare ricette e senza aggiungere aggettivi qualificativi di testa tua."""
         else:
             prompt_di_sistema = f"""Agisci come {scelta}. Ti trovi nell'Ottocento.
 
