@@ -17,36 +17,39 @@ HF_TOKEN = st.secrets.get("HF_TOKEN", "")
 # Definiamo il modello di intelligenza artificiale (Qwen)
 MODELLO_OPEN_SOURCE = "Qwen/Qwen2.5-7B-Instruct"
 
-# Inizializzazione del client ufficiale di Hugging Face
+# Inizializzazione del client ufficiale di Hugging Face (Nativo e senza configurazione URL)
 client = InferenceClient(model=MODELLO_OPEN_SOURCE, token=HF_TOKEN)
 
-# Mappa con i quattro autori storici e le rispettive lingue dei PDF
+# Mappa con i tuoi quattro autori storici e i rispettivi PDF
 personaggi = {
     "Charles Dickens": {
         "pdf": "dickens.pdf",
-        "lingua_pdf": "inglese",
         "descrizione": "Grande osservatore sociale britannico, ironico, attento ai dettagli della vita quotidiana e alle atmosfere delle città italiane.",
-        "prompt": "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in Italia nell'Ottocento. Il tuo tono è arguto, descrittivo, venato di sottile ironia britannica e profondamente attento ai costumi e alle scene di vita quotidiana. Rispondi in italiano con eleganza."
+        "prompt": "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in... [truncated for code structure]"
     },
     "Goethe": {
         "pdf": "goethe.pdf",
-        "lingua_pdf": "italiano",
         "descrizione": "L'intellettuale tedesco per eccellenza, guidato dalla ricerca della bellezza classica, della filosofia e dell'osservazione scientifica.",
-        "prompt": "Agisci come Johann Wolfgang von Goethe. Sei il celebre scrittore e scienziato tedesco nel pieno del tuo storico viaggio in Italia. Il tuo tono è colto, filosofico, analitico e innamorato dell'arte classica e della natura mediterranea. Rispondi in italiano."
+        "prompt": "Agisci come Johann Wolfgang von Goethe. Sei il celebre scrittore e scienziato tedesco..."
     },
     "Stendhal": {
         "pdf": "stendhal.pdf",
-        "lingua_pdf": "inglese",
         "descrizione": "Scrittore francese appassionato, travolto dall'amore per l'arte, la musica, l'opera lirica e le forti emozioni delle città italiane.",
-        "prompt": "Agisci come Stendhal (Marie-Henri Beyle). Sei lo scrittore francese perdutamente innamorato dell'Italia, della sua musica e dei suoi capolavori artistici. Il tuo tono è appassionato, emotivo, sensibile e colto. Rispondi in italiano."
+        "prompt": "Agisci come Stendhal (Marie-Henri Beyle). Sei lo scrittore francese perdutamente innamorato dell'Italia..."
     },
     "Alexandre Dumas": {
         "pdf": "dumas.pdf",
-        "lingua_pdf": "francese",
         "descrizione": "Il maestro dell'avventura, teatrale, energico e travolgente nel raccontare aneddoti, miti locali e peripezie di viaggio.",
-        "prompt": "Agisci come Alexandre Dumas padre. Sei lo scrittore francese autore di grandi romanzi d'avventura, in viaggio in Italia. Il tuo tono è vivace, teatrale, energico, ricco di spirito d'avventura e amore per le storie avvincenti. Rispondi in italiano."
+        "prompt": "Agisci come Alexandre Dumas padre. Sei lo scrittore francese autore di grandi romanzi d'avventura..."
     }
 }
+
+# Ripristino dei testi completi dei prompt per sicurezza nel sistema RAG
+personaggi["Charles Dickens"]["prompt"] = "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in... [truncated for code structure]"
+personaggi["Charles Dickens"]["prompt"] = "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in Italia. Il tuo tono è arguto, descrittivo, venato di sottile ironia britannica e profondamente attento ai costumi e alle scene di vita quotidiana. Rispondi in italiano con eleganza. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, di' chiaramente che non trovi questo aneddoto nei tuoi diari italiani. Non inventare nulla."
+personaggi["Goethe"]["prompt"] = "Agisci come Johann Wolfgang von Goethe. Sei il celebre scrittore e scienziato tedesco nel pieno del suo storico viaggio in Italia. Il tuo tono è colto, filosofico, analitico e innamorato dell'arte classica e della natura mediterranea. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, ammetti chiaramente che non fa parte delle tue osservazioni documentate."
+personaggi["Stendhal"]["prompt"] = "Agisci come Stendhal (Marie-Henri Beyle). Sei lo scrittore francese perdutamente innamorato dell'Italia, della sua musica e dei suoi capolavori artistici. Il tuo tono è appassionato, emotivo, sensibile e colto. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, di' che la tua anima non ha annotato questo dettaglio nei diari."
+personaggi["Alexandre Dumas"]["prompt"] = "Agisci come Alexandre Dumas padre. Sei lo scrittore francese autore di grandi romanzi d'avventura, in viaggio in Italia. Il tuo tono è vivace, teatrale, energico, ricco di spirito d'avventura e amore per le storie avvincenti. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, di' che questa storia non fa parte delle tue cronache di viaggio."
 
 # --- FUNZIONI PER GESTIRE I PDF (RAG) ---
 @st.cache_data
@@ -70,7 +73,7 @@ def carica_e_spezzetta_pdf(nome_file, chunk_size=600):
     except:
         return []
 
-def trova_paragrafi_rilevanti(query, chunks, top_k=3):
+def trova_paragrafi_rilevanti(query, chunks, top_k=2):
     if not chunks:
         return ""
     try:
@@ -82,28 +85,11 @@ def trova_paragrafi_rilevanti(query, chunks, top_k=3):
         
         risultati = []
         for idx in top_indices:
-            if scores[idx] > 0.05:
+            if scores[idx] > 0.02:
                 risultati.append(chunks[idx])
         return "\n\n".join(risultati)
     except:
         return ""
-
-# TRADUTTORE DELLA SOLA QUERY UTENTE
-def traduci_domanda_utente(testo_italiano, lingua_destinazione):
-    if lingua_destinazione == "italiano":
-        return testo_italiano
-    try:
-        res = client.chat_completion(
-            messages=[
-                {"role": "system", "content": "Sei un traduttore automatico. Traduci la domanda dell'utente nella lingua richiesta in modo diretto. Restituisci SOLO la traduzione, senza commenti."},
-                {"role": "user", "content": f"Traduci in {lingua_destinazione}: {testo_italiano}"}
-            ],
-            max_tokens=100,
-            temperature=0.1
-        )
-        return res.choices[0].message.content.strip()
-    except:
-        return testo_italiano
 # ----------------------------------------
 
 # Barra laterale di controllo
@@ -137,7 +123,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Interazione e logica RAG con blocco di lingua assoluto
+# Interazione e logica RAG
 if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}..."):
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -146,38 +132,24 @@ if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}...
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         
-        lingua_target = personaggi[scelta]["lingua_pdf"]
-        stringa_da_cercare = traduci_domanda_utente(user_input, lingua_target)
-        contesto_estratto = trova_paragrafi_rilevanti(stringa_da_cercare, paragrafi_testo, top_k=3)
+        contesto_estratto = trova_paragrafi_rilevanti(user_input, paragrafi_testo, top_k=2)
         
-        # AGGIORNATO: Triple virgolette con "Blocco Lingua Assoluto" per evitare leak di cinese
+        prompt_di_sistema = personaggi[scelta]["prompt"]
         if contesto_estratto:
-            prompt_di_sistema = f"""{personaggi[scelta]["prompt"]}
-
-[CONTESTO AUTENTICO IN LINGUA {lingua_target.upper()} ESTRATTO DAL TUO DIARIO]:
-{contesto_estratto}
-
-⚠️ DIRETTIVE DI VERIDICITÀ E LINGUA ASSOLUTE (TASSATIVE):
-1. LINGUA ESCLUSIVA: Rispondi REQUISITAMENTE al 100% in lingua italiana. È severamente ed ASSOLUTAMENTE VIETATO l'uso di caratteri cinesi (中文), parole inglesi, francesi o note di traduzione interne nella risposta finale. Non mostrare mai la tua traduzione interna.
-2. La tua unica fonte di verità sono i fatti scritti nel testo originale sopra riportato.
-3. ISOLAMENTO DELLA CONOSCENZA: Se l'utente ti nomina o ti chiede di piatti, ricette o ingredienti (come pasta alla puttanesca, caponotti, cocchi o altro) che NON sono scritti chiaramente nel testo originale sopra, devi dichiarare che nei tuoi diari non c'è alcuna traccia di queste cose.
-4. Non inventare, non estrapolare e non aggiungere alcun aggettivo descrittivo o cibo di testa tua."""
+            prompt_di_sistema += f"\n\nCONTESTO ESTRATTO DAL TUO PDF:\n{contesto_estratto}"
         else:
-            prompt_di_sistema = f"""Agisci come {scelta}. Ti trovi nell'Ottocento.
-
-Istruzione universale di vuoto documentale: L'utente ti ha fatto una domanda su un concetto, un'invenzione moderna, un cibo o un dettaglio che non è assolutamente presente nei tuoi scritti forniti o che non appartiene al tuo secolo.
-Rispondi in modo molto breve (massimo due frasi) ed ESCLUSIVAMENTE in lingua italiana. Dichiara che non ricordi questo elemento o che non fa parte delle tue cronache. Non usare mai caratteri cinesi."""
+            prompt_di_sistema += "\n\nATTENZIONE: Nessun dato rilevante trovato nel tuo PDF per questa specifica domanda."
 
         messages_for_api = [{"role": "system", "content": prompt_di_sistema}]
         for m in st.session_state.messages:
             messages_for_api.append({"role": m["role"], "content": m["content"]})
         
         try:
+            # Chiamata nativa usando l'InferenceClient ufficiale di Hugging Face
             response = client.chat_completion(
                 messages=messages_for_api,
                 stream=True,
-                max_tokens=600,
-                temperature=0.1
+                max_tokens=400
             )
             
             full_response = ""
