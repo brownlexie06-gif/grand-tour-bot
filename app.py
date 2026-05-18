@@ -15,7 +15,7 @@ st.subheader("Digital Storytelling Project - Autori del Grand Tour")
 HF_TOKEN = st.secrets.get("HF_TOKEN", "")
 
 # 1. CAMBIO MODELLO: Inseriamo il modello ufficiale di Mistral AI
-MODELLO_OPEN_SOURCE = "mistralai/Mistral-7B-Instruct-v0.3"
+MODELLO_OPEN_SOURCE = "HuggingFaceH4/zephyr-7b-beta"
 
 # 2. Inizializzazione del client ufficiale di Hugging Face
 client = InferenceClient(model=MODELLO_OPEN_SOURCE, token=HF_TOKEN)
