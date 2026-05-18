@@ -1,5 +1,5 @@
 streamlit
-huggingface_hub
 pypdf
-numpy
 sentence-transformers
+numpy
+langchain-openai
