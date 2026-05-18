@@ -159,8 +159,7 @@ if user_input := st.chat_input(f"Fai una domanda a {scelta}..."):
         prompt_di_sistema = personaggi[scelta]["prompt"] + """
 
 ISTRUZIONI IMPORTANTI:
-- Usa principalmente il contesto fornito
-- Se il contesto è incompleto, puoi integrare con conoscenze generali
+- Usa solo il contesto fornito
 - Se non sei sicuro, dillo chiaramente
 - Mantieni sempre lo stile del personaggio
 """
