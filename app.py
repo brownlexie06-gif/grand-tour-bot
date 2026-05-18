@@ -88,7 +88,7 @@ def trova_paragrafi_rilevanti(query, chunks, top_k=3):
     except:
         return ""
 
-# MOTORE DI TRADUZIONE DI BACKGROUND (Evita il sovraccarico nel gioco di ruolo)
+# MOTORE DI TRADUZIONE DI BACKGROUND
 def traduci_testo_nascosto(testo, compito_richiesto):
     try:
         res = client.chat_completion(
@@ -135,7 +135,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Interazione e logica RAG bilingue incrociata
+# Interazione e logica RAG multilingue blindata
 if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}..."):
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -146,26 +146,56 @@ if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}...
         
         lingua_target = personaggi[scelta]["lingua_pdf"]
         
-        # PIPELINE DI TRADUZIONE INCROCIATA (OPZIONE B EVOLUTA)
+        # PIPELINE DI TRADUZIONE INCROCIATA
         if lingua_target != "italiano":
-            # 1. Traduzione della domanda dall'italiano alla lingua del PDF
             stringa_da_cercare = traduci_testo_nascosto(user_input, f"Traduci questa domanda in {lingua_target}")
-            # 2. Ricerca del testo in lingua originale nel PDF
             contesto_straniero = trova_paragrafi_rilevanti(stringa_da_cercare, paragrafi_testo, top_k=3)
-            # 3. Traduzione immediata del contesto trovato in un italiano perfetto
             if contesto_straniero:
                 contesto_estratto = traduci_testo_nascosto(contesto_straniero, "Traduci questo testo in italiano")
             else:
                 contesto_estratto = ""
         else:
-            # Se il documento è già in italiano (Goethe), procediamo normalmente
             stringa_da_cercare = user_input
             contesto_estratto = trova_paragrafi_rilevanti(stringa_da_cercare, paragrafi_testo, top_k=3)
         
-        # IL GUARDRAIL LOGICO UNIVERSALE CONTRO LE INVENZIONI
+        # IL GUARDRAIL LOGICO CON TRIPLE VIRGOLETTE (Antierrore di sintassi)
         if contesto_estratto:
-            prompt_di_sistema = (
-                personaggi[scelta]["prompt"] + 
-                f"\n\n[CONTESTO REALE ED AUTENTICO ESTRATTO DAL TUO DIARIO]:\n{contesto_estratto}\n\n"
-                "⚠️ DIRETTIVE DI VERIDICITÀ ASSOLUTA (TOLLERANZA ZERO PER LE INVENZIONI):\n"
-                "1. La tua unica fonte di verità è il
+            prompt_di_sistema = f"""{personaggi[scelta]["prompt"]}
+
+[CONTESTO REALE ED AUTENTICO ESTRATTO DAL TUO DIARIO]:
+{contesto_estratto}
+
+⚠️ DIRETTIVE DI VERIDICITÀ ASSOLUTA (TOLLERANZA ZERO PER LE INVENZIONI):
+1. La tua unica fonte di verità è il [CONTESTO REALE ED AUTENTICO ESTRATTO DAL TUO DIARIO] riportato sopra.
+2. ISOLAMENTO DELLA CONOSCENZA: Ignora qualsiasi informazione, ricetta, ingrediente, luogo o tecnologia appresi fuori da questo testo.
+3. DIVIETO DI ESTRAPOLAZIONE: Non aggiungere dettagli descrittivi, aggettivi qualificativi o ingredienti di testa tua. Se il testo menziona un cibo o un luogo in modo semplice, riportalo esattamente così come appare, senza arricchirlo con stereotipi moderni o conoscenze esterne.
+4. Se i dettagli nel testo sono scarsi, fornisci una risposta altrettanto breve e dichiara che i tuoi diari non offrono ulteriori annotazioni su questo specifico punto."""
+        else:
+            prompt_di_sistema = f"""Agisci come {scelta}. Ti trovi nell'Ottocento.
+
+Istruzione universale di vuoto documentale: L'utente ti ha fatto una domanda su un concetto, un'invenzione moderna, un cibo o un dettaglio che non è assolutamente presente nei tuoi scritti forniti o che non appartiene al tuo secolo.
+Rispondi in modo molto breve (massimo due frasi), dichiarando con fermezza storica o ironia che non ricordi questo elemento, che non è registrato nelle tue cronache o che non fa parte del tuo mondo. Rifiuta la domanda senza inventare nulla."""
+
+        messages_for_api = [{"role": "system", "content": prompt_di_sistema}]
+        for m in st.session_state.messages:
+            messages_for_api.append({"role": m["role"], "content": m["content"]})
+        
+        try:
+            response = client.chat_completion(
+                messages=messages_for_api,
+                stream=True,
+                max_tokens=600,
+                temperature=0.1
+            )
+            
+            full_response = ""
+            for chunk in response:
+                content = chunk.choices[0].delta.content
+                if content:
+                    full_response += content
+                    message_placeholder.markdown(full_response + "▌")
+            message_placeholder.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+        except Exception as e:
+            st.error(f"Errore tecnico nella generazione della risposta: {e}")
