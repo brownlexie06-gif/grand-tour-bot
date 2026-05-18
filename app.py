@@ -175,7 +175,7 @@ CONTESTO:
             response = client.chat_completion(
                 messages=messages_for_api,
                 stream=True,
-                max_tokens=500,
+                max_tokens=400,
                 temperature=0.7
             )
 
