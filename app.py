@@ -17,39 +17,32 @@ HF_TOKEN = st.secrets.get("HF_TOKEN", "")
 # Definiamo il modello di intelligenza artificiale (Qwen)
 MODELLO_OPEN_SOURCE = "Qwen/Qwen2.5-7B-Instruct"
 
-# Inizializzazione del client ufficiale di Hugging Face (Nativo e senza configurazione URL)
+# Inizializzazione del client ufficiale di Hugging Face
 client = InferenceClient(model=MODELLO_OPEN_SOURCE, token=HF_TOKEN)
 
-# Mappa aggiornata con istruzioni anti-anacronismo molto più severe
+# Mappa con i tuoi quattro autori storici e i rispettivi PDF
 personaggi = {
     "Charles Dickens": {
         "pdf": "dickens.pdf",
         "descrizione": "Grande osservatore sociale britannico, ironico, attento ai dettagli della vita quotidiana e alle atmosfere delle città italiane.",
-        "prompt": "Agisci come Charles Dickens. Sei nel diciannovesimo secolo. Istruzione tassativa e assoluta: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO del tuo PDF. Se l'utente nomina invenzioni, oggetti o concetti moderni successivi al tuo secolo (come smartphone, televisione, internet, computer, aerei), devi dichiarare totale ignoranza, affermando con fermezza che nel tuo tempo queste cose non esistono e che non ne sai nulla. Non provare a filosofeggiare o a interpretare cose moderne."
+        "prompt": "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in Italia nell'Ottocento. Il tuo tono è arguto, descrittivo e venato di sottile ironia. Rispondi in italiano con eleganza. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito dal tuo PDF. Non usare conoscenze esterne."
     },
     "Goethe": {
         "pdf": "goethe.pdf",
         "descrizione": "L'intellettuale tedesco per eccellenza, guidato dalla ricerca della bellezza classica, della filosofia e dell'osservazione scientifica.",
-        "prompt": "Agisci come Johann Wolfgang von Goethe. Sei un uomo del Settecento/Ottocento. Istruzione tassativa e assoluta: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO del tuo PDF. Se l'utente ti chiede di tecnologie, oggetti o invenzioni del futuro (come smartphone, televisioni, social network, internet), devi rifiutarti di rispondere dicendo che non hai idea di cosa siano e che non trovi alcuna traccia di queste diavolerie moderne nei tuoi diari di viaggio. Non inventare pareri su cose che non appartengono alla tua epoca."
+        "prompt": "Agisci come Johann Wolfgang von Goethe. Sei il celebre scrittore e scienziato tedesco nel pieno del tuo storico viaggio in Italia. Il tuo tono è colto, filosofico e analitico. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito dal tuo PDF. Non usare conoscenze esterne."
     },
     "Stendhal": {
         "pdf": "stendhal.pdf",
         "descrizione": "Scrittore francese appassionato, travolto dall'amore per l'arte, la musica, l'opera lirica e le forti emozioni delle città italiane.",
-        "prompt": "Agisci come Stendhal. Vivi nell'Ottocento. Istruzione tassativa e assoluta: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO del tuo PDF. Se l'utente introduce argomenti, tecnologie o invenzioni moderne (come smartphone, televisione, internet), esprimi totale confusione e dichiara che la tua anima non conosce questi elementi del futuro, rifiutando di commentarli. Rimani strettamente ancorato ai diari dell'epoca."
+        "prompt": "Agisci come Stendhal. Sei lo scrittore francese perdutamente innamorato dell'Italia, delle sue arti e delle sue passioni. Il tuo tono è sensibile e colto. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito dal tuo PDF. Non usare conoscenze esterne."
     },
     "Alexandre Dumas": {
         "pdf": "dumas.pdf",
         "descrizione": "Il maestro dell'avventura, teatrale, energico e travolgente nel raccontare aneddoti, miti locali e peripezie di viaggio.",
-        "prompt": "Agisci come Alexandre Dumas padre. Vivi nell'Ottocento. Istruzione tassativa e assoluta: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO del tuo PDF. Se l'utente ti interroga su cose moderne che non appartengono al tuo secolo (come smartphone, televisione, automobili, internet), di' che questa non è una storia che ti appartiene, che non sai cosa siano e che non esistono nelle tue cronache. Non fare riflessioni su tecnologie future."
+        "prompt": "Agisci come Alexandre Dumas padre. Sei lo scrittore francese autore di grandi romanzi d'avventura. Il tuo tono è vivace, teatrale ed energico. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito dal tuo PDF. Non usare conoscenze esterne."
     }
 }
-
-# Ripristino dei testi completi dei prompt per sicurezza nel sistema RAG
-personaggi["Charles Dickens"]["prompt"] = "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in... [truncated for code structure]"
-personaggi["Charles Dickens"]["prompt"] = "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in Italia. Il tuo tono è arguto, descrittivo, venato di sottile ironia britannica e profondamente attento ai costumi e alle scene di vita quotidiana. Rispondi in italiano con eleganza. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, di' chiaramente che non trovi questo aneddoto nei tuoi diari italiani. Non inventare nulla."
-personaggi["Goethe"]["prompt"] = "Agisci come Johann Wolfgang von Goethe. Sei il celebre scrittore e scienziato tedesco nel pieno del suo storico viaggio in Italia. Il tuo tono è colto, filosofico, analitico e innamorato dell'arte classica e della natura mediterranea. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, ammetti chiaramente che non fa parte delle tue osservazioni documentate."
-personaggi["Stendhal"]["prompt"] = "Agisci come Stendhal (Marie-Henri Beyle). Sei lo scrittore francese perdutamente innamorato dell'Italia, della sua musica e dei suoi capolavori artistici. Il tuo tono è appassionato, emotivo, sensibile e colto. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, di' che la tua anima non ha annotato questo dettaglio nei diari."
-personaggi["Alexandre Dumas"]["prompt"] = "Agisci come Alexandre Dumas padre. Sei lo scrittore francese autore di grandi romanzi d'avventura, in viaggio in Italia. Il tuo tono è vivace, teatrale, energico, ricco di spirito d'avventura e amore per le storie avvincenti. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, di' che questa storia non fa parte delle tue cronache di viaggio."
 
 # --- FUNZIONI PER GESTIRE I PDF (RAG) ---
 @st.cache_data
@@ -73,7 +66,7 @@ def carica_e_spezzetta_pdf(nome_file, chunk_size=600):
     except:
         return []
 
-def trova_paragrafi_rilevanti(query, chunks, top_k=2):
+def trova_paragrafi_rilevanti(query, chunks, top_k=5):
     if not chunks:
         return ""
     try:
@@ -85,7 +78,7 @@ def trova_paragrafi_rilevanti(query, chunks, top_k=2):
         
         risultati = []
         for idx in top_indices:
-            if scores[idx] > 0.02:
+            if scores[idx] > 0.03:  # Soglia di rilevanza minima
                 risultati.append(chunks[idx])
         return "\n\n".join(risultati)
     except:
@@ -123,7 +116,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Interazione e logica RAG
+# Interazione e logica RAG blindata
 if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}..."):
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -132,20 +125,20 @@ if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}...
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         
-        contesto_estratto = trova_paragrafi_rilevanti(user_input, paragrafi_testo, top_k=2)
+        # Cerchiamo nel PDF i passaggi chiave
+        contesto_estratto = trova_paragrafi_rilevanti(user_input, paragrafi_testo, top_k=5)
         
-        prompt_di_sistema = personaggi[scelta]["prompt"]
+        # REGOLA LOGICA DI BLOCCO: Se il PDF non contiene l'argomento, forziamo il prompt di sistema
         if contesto_estratto:
-            prompt_di_sistema += f"\n\nCONTESTO ESTRATTO DAL TUO PDF:\n{contesto_estratto}"
+            prompt_di_sistema = personaggi[scelta]["prompt"] + f"\n\nCONTESTO REALE ESTRATTO DAL TUO DIARIO:\n{contesto_estratto}"
         else:
-            prompt_di_sistema += "\n\nATTENZIONE: Nessun dato rilevante trovato nel tuo PDF per questa specifica domanda."
+            prompt_di_sistema = f"Agisci come {scelta}. Ti trovi nell'Ottocento. L'utente ti ha appena fatto una domanda su un termine, una tecnologia o un concetto (come smartphone, televisione o simili) che non esiste assolutamente nella tua epoca e di cui non c'è traccia nei tuoi scritti. Rispondi in modo molto breve, mostrandoti profondamente confuso, sbigottito o ironico. Di' chiaramente che non capisci di cosa stia parlando, che questa parola non appartiene al tuo mondo e rifiuta la domanda senza dare alcuna opinione o descrizione dell'oggetto."
 
         messages_for_api = [{"role": "system", "content": prompt_di_sistema}]
         for m in st.session_state.messages:
             messages_for_api.append({"role": m["role"], "content": m["content"]})
         
         try:
-            # Chiamata nativa usando l'InferenceClient ufficiale di Hugging Face
             response = client.chat_completion(
                 messages=messages_for_api,
                 stream=True,
