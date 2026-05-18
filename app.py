@@ -14,10 +14,10 @@ st.subheader("Digital Storytelling Project - Autori del Grand Tour")
 # Lettura del token dai Secrets di Streamlit
 HF_TOKEN = st.secrets.get("HF_TOKEN", "")
 
-# Definiamo il modello di intelligenza artificiale (Qwen)
-MODELLO_OPEN_SOURCE = "Qwen/Qwen2.5-7B-Instruct"
+# 1. CAMBIO MODELLO: Inseriamo il modello ufficiale di Mistral AI
+MODELLO_OPEN_SOURCE = "mistralai/Mistral-7B-Instruct-v0.3"
 
-# Inizializzazione del client ufficiale di Hugging Face (Nativo e senza configurazione URL)
+# 2. Inizializzazione del client ufficiale di Hugging Face
 client = InferenceClient(model=MODELLO_OPEN_SOURCE, token=HF_TOKEN)
 
 # Mappa con i tuoi quattro autori storici e i rispettivi PDF
@@ -25,27 +25,26 @@ personaggi = {
     "Charles Dickens": {
         "pdf": "dickens.pdf",
         "descrizione": "Grande osservatore sociale britannico, ironico, attento ai dettagli della vita quotidiana e alle atmosfere delle città italiane.",
-        "prompt": "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in... [truncated for code structure]"
+        "prompt": ""
     },
     "Goethe": {
         "pdf": "goethe.pdf",
         "descrizione": "L'intellettuale tedesco per eccellenza, guidato dalla ricerca della bellezza classica, della filosofia e dell'osservazione scientifica.",
-        "prompt": "Agisci come Johann Wolfgang von Goethe. Sei il celebre scrittore e scienziato tedesco..."
+        "prompt": ""
     },
     "Stendhal": {
         "pdf": "stendhal.pdf",
         "descrizione": "Scrittore francese appassionato, travolto dall'amore per l'arte, la musica, l'opera lirica e le forti emozioni delle città italiane.",
-        "prompt": "Agisci come Stendhal (Marie-Henri Beyle). Sei lo scrittore francese perdutamente innamorato dell'Italia..."
+        "prompt": ""
     },
     "Alexandre Dumas": {
         "pdf": "dumas.pdf",
         "descrizione": "Il maestro dell'avventura, teatrale, energico e travolgente nel raccontare aneddoti, miti locali e peripezie di viaggio.",
-        "prompt": "Agisci come Alexandre Dumas padre. Sei lo scrittore francese autore di grandi romanzi d'avventura..."
+        "prompt": ""
     }
 }
 
-# Ripristino dei testi completi dei prompt per sicurezza nel sistema RAG
-personaggi["Charles Dickens"]["prompt"] = "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in... [truncated for code structure]"
+# Configurazione dettagliata dei prompt storici per il sistema RAG
 personaggi["Charles Dickens"]["prompt"] = "Agisci come Charles Dickens. Sei il celebre scrittore britannico in viaggio in Italia. Il tuo tono è arguto, descrittivo, venato di sottile ironia britannica e profondamente attento ai costumi e alle scene di vita quotidiana. Rispondi in italiano con eleganza. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, di' chiaramente che non trovi questo aneddoto nei tuoi diari italiani. Non inventare nulla."
 personaggi["Goethe"]["prompt"] = "Agisci come Johann Wolfgang von Goethe. Sei il celebre scrittore e scienziato tedesco nel pieno del suo storico viaggio in Italia. Il tuo tono è colto, filosofico, analitico e innamorato dell'arte classica e della natura mediterranea. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, ammetti chiaramente che non fa parte delle tue osservazioni documentate."
 personaggi["Stendhal"]["prompt"] = "Agisci come Stendhal (Marie-Henri Beyle). Sei lo scrittore francese perdutamente innamorato dell'Italia, della sua musica e dei suoi capolavori artistici. Il tuo tono è appassionato, emotivo, sensibile e colto. Rispondi in italiano. Istruzione tassativa: rispondi basandoti ESCLUSIVAMENTE sulle informazioni presenti nel CONTESTO fornito. Se la risposta non è presente nel contesto, di' che la tua anima non ha annotato questo dettaglio nei diari."
@@ -145,7 +144,6 @@ if user_input := st.chat_input(f"Fai una domanda basata sui testi di {scelta}...
             messages_for_api.append({"role": m["role"], "content": m["content"]})
         
         try:
-            # Chiamata nativa usando l'InferenceClient ufficiale di Hugging Face
             response = client.chat_completion(
                 messages=messages_for_api,
                 stream=True,
