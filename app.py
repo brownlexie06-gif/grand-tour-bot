@@ -12,6 +12,7 @@ st.set_page_config(page_title="Grand Tour Portal - Chatbot", page_icon="🏛️"
 st.title("🏛️ Grand Tour Portal")
 st.subheader("Viaggiamo insieme attraverso le pagine dei grandi autori per scoprire Napoli con occhi d'altri tempi 🍕🌋📖")
 
+
 llm = ChatOpenAI(
     model="gpt-4o", 
     base_url="https://api-gpt.jrc.ec.europa.eu/v1", 
