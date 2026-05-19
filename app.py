@@ -10,7 +10,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 st.set_page_config(page_title="Grand Tour Portal - Chatbot", page_icon="🏛️", layout="wide")
 
 st.title("🏛️ Grand Tour Portal")
-st.subheader("Viaggiamo insieme attraverso le pagine di Goethe, Stendhal, Dumas e Dickens per scoprire Napoli con occhi d'altri tempi 🌍📖")
+st.subheader("Viaggiamo insieme attraverso le pagine di Goethe, Stendhal, Dumas e Dickens per scoprire Napoli con occhi d'altri tempi 🍕🌋📖")
 
 llm = ChatOpenAI(
     model="gpt-4o", 
