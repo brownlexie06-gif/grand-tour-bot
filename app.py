@@ -103,7 +103,7 @@ def adatta_lingua_query(query, personaggio, llm_model):
     lingue_originali = {
         "Alexandre Dumas": "francese",
         "Charles Dickens": "inglese",
-        "Stendhal": "inglese"
+        "Stendhal": "francese"
         # Goethe e Stendhal possono essere aggiunti qui se i loro PDF non sono in italiano
     }
     
