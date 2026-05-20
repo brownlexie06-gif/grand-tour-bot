@@ -154,8 +154,8 @@ if user_input := st.chat_input(f"Fai una domanda a {scelta}..."):
         st.markdown(user_input)
 
     st.session_state.messages.append({"role": "user", "content": user_input})
-
-   with st.chat_message("assistant"):
+    
+    with st.chat_message("assistant"):
         message_placeholder = st.empty()
 
         # 1. Traduciamo la query per il motore di ricerca vettoriale
