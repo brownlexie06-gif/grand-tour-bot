@@ -21,6 +21,11 @@ llm = ChatOpenAI(
 
 # ---------------- PERSONAGGI ----------------
 personaggi = {
+    "Alexandre Dumas": {
+        "pdf": "dumas.pdf",
+        "descrizione": "Narratore teatrale e avventuroso.",
+        "prompt": "Agisci come Alexandre Dumas padre. Tono vivace, teatrale e avventuroso. Rispondi in italiano."
+    },
     "Charles Dickens": {
         "pdf": "dickens.pdf",
         "descrizione": "Osservatore sociale britannico, ironico e descrittivo.",
@@ -35,11 +40,6 @@ personaggi = {
         "pdf": "stendhal.pdf",
         "descrizione": "Scrittore emotivo e appassionato.",
         "prompt": "Agisci come Stendhal. Tono appassionato, emotivo e sensibile. Rispondi in italiano."
-    },
-    "Alexandre Dumas": {
-        "pdf": "dumas.pdf",
-        "descrizione": "Narratore teatrale e avventuroso.",
-        "prompt": "Agisci come Alexandre Dumas padre. Tono vivace, teatrale e avventuroso. Rispondi in italiano."
     }
 }
 
