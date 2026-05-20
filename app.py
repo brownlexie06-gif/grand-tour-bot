@@ -93,9 +93,26 @@ def trova_paragrafi_rilevanti(query, chunks, model, embeddings, top_k=3):
 
     top_indices = np.argsort(scores)[-top_k:][::-1]
 
-    risultati = [chunks[i] for i in top_indices if scores[i] > 0.30]
+    risultati = [chunks[i] for i in top_indices if scores[i] > 0.20]
 
     return "\n\n".join(risultati)
+
+# ---------------- QUERY TRANSLATION ----------------
+def adatta_lingua_query(query, personaggio, llm_model):
+    """Traduci la query nella lingua del testo originale per migliorare la ricerca vettoriale."""
+    lingue_originali = {
+        "Alexandre Dumas": "francese",
+        "Charles Dickens": "inglese"
+        # Goethe e Stendhal possono essere aggiunti qui se i loro PDF non sono in italiano
+    }
+    
+    if personaggio in lingue_originali:
+        lingua_target = lingue_originali[personaggio]
+        prompt_traduzione = f"Traduci questa domanda in {lingua_target}. Restituisci SOLO la traduzione, senza virgolette o spiegazioni: {query}"
+        risposta = llm_model.invoke([HumanMessage(content=prompt_traduzione)])
+        return risposta.content
+    
+    return query
 
 # ---------------- SIDEBAR ----------------
 st.sidebar.header("🔧 Stato dei Documenti")
@@ -138,11 +155,15 @@ if user_input := st.chat_input(f"Fai una domanda a {scelta}..."):
 
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    with st.chat_message("assistant"):
+   with st.chat_message("assistant"):
         message_placeholder = st.empty()
 
+        # 1. Traduciamo la query per il motore di ricerca vettoriale
+        query_per_ricerca = adatta_lingua_query(user_input, scelta, llm)
+
+        # 2. Usiamo la query tradotta per estrarre il contesto
         contesto_estratto = trova_paragrafi_rilevanti(
-            user_input,
+            query_per_ricerca,
             paragrafi_testo,
             model_embed,
             embeddings
