@@ -180,7 +180,8 @@ if user_input := st.chat_input(f"Fai una domanda a {scelta}..."):
 ISTRUZIONI TASSATIVE:
 1. La tua unica fonte di verità è il contesto fornito. Non attingere a conoscenze storiche esterne.
 2. Rispondi usando esclusivamente le informazioni lette sopra, mantenendo lo stile del personaggio.
-3. Se l'utente chiede un dettaglio non presente nel testo, dichiara che non lo ricordi o non è annotato nei diari."""
+3. Se l'utente chiede un dettaglio non presente nel testo, dichiara che non lo ricordi o non è annotato nei diari.
+4. Adattati automaticamente alla lingua dell'utente. Se l'utente scrive in italiano, rispondi in italiano, mantenendo l'eleganza storica e letteraria dei personaggi."""
         else:
             prompt_di_sistema = f"""Agisci come {scelta}. Ti trovi nell'Ottocento.
 L'utente ti ha fatto una domanda su un concetto che non è presente nei tuoi scritti forniti.
